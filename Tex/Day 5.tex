@@ -1,29 +1,72 @@
 \documentclass{article}
 
 \usepackage[]{hyperref}
+\usepackage{graphicx}
+\usepackage{amssymb}
 
-\hypersetup{colorlinks=true}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=blue,
+    pdftitle={Day 5},
+    pdfpagemode=FullScreen,
+    pdfauthor={Taraash},
+}
+
+\setcounter{secnumdepth}{0}
 
 \title{Day 5}
 \author{Taraash}
 \date{}
 
 \begin{document}
+
+\newcommand{\img}[1]{
+    \begin{figure*}[h]
+        \centering
+        \includegraphics[width=\textwidth]{day5images/image#1.png}
+    \end{figure*}
+}
+
+\newcommand{\imgs}[2]{
+    \begin{figure*}[h]
+        \centering
+        \includegraphics[width=#2\textwidth]{day5images/image#1.png}
+    \end{figure*}
+}
+
+\newcommand{\imgc}[2]{
+    \begin{figure*}[h]
+        \centering
+        \includegraphics[width=\textwidth]{day5images/image#1.png}
+        \caption{#2}
+    \end{figure*}
+}
+\newcommand{\imgcs}[3]{
+    \begin{figure*}[h]
+        \centering
+        \includegraphics[width=#3\textwidth]{day5images/image#1.png}
+        \caption{#2}
+    \end{figure*}
+}
+
+
 	\maketitle
 	
 	\section{Introduction}
-	I'll first talk about some recommended ways to collaborate on the project. Then we'll go over some optimization for foliage, particularly culling, world position offset and using materials (with wind). \textbf{These are rough, improve them after the class}
+	I'll first talk about some recommended ways to collaborate on the project. I'll then go over landscape splies, which we'll use to create a procedural road. I'll then end with some talk about optimization --- culling and world position offset.
 	
 	\section{Collaboration}
 	I would've preferred markdown for this, but here goes:
 	\begin{description}
-		\item[Git (with LFS)] Unreal Engine has built-in (though in Beta) for revision control using Git. 
+		\item[Git (with LFS)] Unreal Engine has built-in support for Git (albeit in beta).
 		\begin{enumerate}
-			\item Install Git if haven't already.
-			\item Get GitLFS (large file system) (it's included by default in Windows).
+			\item Install Git if haven't already (You could run (in powershell or similar) \verb|winget install Git.Git| for a quick install, but I'd recommend using the installer).
+			\item Get GitLFS (large file system) (it's included by default in Windows, otherwise, \href{https://git-lfs.com/}{git-lfs.com}).
+
 			\item I'd recommend putting \verb*|Content/Fab| or similar heavy assets in the \verb*|.gitignore|. Could even put it in \verb*|.gitattributes|, but I'd recommend just telling your fellow teammates to download whatever you downloaded locally, there's no need to upload them.
-			\item I wouldn't really recommend using LFS because it'll be difficult to tell it which files it should track, every \verb*|.uasset| will be a waste.
-			\item Read more about everything on \href{https://git-lfs.com/}{git-lfs.com}.
+			\item I wouldn't really recommend using LFS because it'll be difficult to tell it which files it should track, every \verb*|.uasset| will be a waste, but you can ofcourse see if it works for you.
 		\end{enumerate}
 		\item[Diversion] There's a new up-and-coming technology, \href{https://www.diversion.dev/}{Diversion} that has a ton of storage for free. You'll need to get it's plugin \href{https://fab.com/s/2b880e6efd2a}{here}. (Linux is not officially supported.)
 		You can use this if you find it easier, but I'd still recommend not uploading heavy assets, your teammates can download that themselves.
@@ -31,50 +74,103 @@
 		\item[Perforce] There's perforce. A nightmare to set up and you need a local server. Of course, not recommended, but worth mentioning since it's the industry standard for version control in games.
 		   
 	\end{description}
+
+	\imgc{1}{Bottom left in the editor, the revision control tab.}
 	\subsection{Uploading your game}
 	Check out \href{https://itch.io/}{itch.io} or \href{https://www.indiexpo.net/}{indiexpo} to host your game if you'd like.
 	
+	\newpage
+
 	\section{Assignment 1}
-	Talk about assignment 1
+	The sound component might've given you some trouble, in particular, it probably wasn't fading out. I demoed this in the class, take a look at this screenshot:
+	\img{}
+
+	I demoed a different way to do this in the class, using the \verb|Do Once| node and spawning the sound at begin overlap, but the one above comes from error-driven-development. I tried the simplest way to do it, got some errors, saw what they were and fixed them. The error I got was fading in a sound after we've faded it out (going in for the second time). This happened because once we've ran the fade out node, Unreal thinks we don't need it anymore and sets it off to be garbage collected. So I spawn the sound after fading it out once again. (When multiple exec pins are connected to the input of another node, that node is run whenever it receives \emph{either} of the exec pins. Here, on BeginPlay, we spawn the sound so we have something on our first BeginOverlap, after which we fade it out and spawn it so we have it in the next BeginOverlap.)
+
+	\section{Landscape splines}
+	I then talked about a slighly niche thing, landscape splines. This is a non-destructive, procedural way to create roads and paths in your landscape. The landscape automatically deforms to match the height of the spline, but don't support collisions very well. If you need a big straight line or something, I'd recommend the Ramp brush.
+
+	\imgc{2}{Hold Ctrl+Alt while hovering for more information}
+
+	This gets you proper collision. I then talked about adding a road to a landscape spline, take a look at \href{https://dev.epicgames.com/documentation/en-us/unreal-engine/landscape-splines-in-unreal-engine}{Epic's documentation on landscape splines} for more information. Let's now create a road.
+\newpage
+	\subsection{Creating a road}
+	We need a material, I downloaded one off of Fab. Dragged off a plane from the add menu and applied this material to it. We know have a road, but we need it as a static mesh to be able to use it in our landscape spline.
 	
+	\imgcs{3}{Converting to a static mesh}{0.85}
+	It'll ask you to save it, so naviagte to where you wish to save it, give it a name and click save. I named mine \verb|SM_Road|, let's now apply it to our spline. (Don't forget, while creating a spline you should be in the landscape spline layer, not the regular edit layer.)
+
+	\imgcs{4}{Getting to spline mode}{0.85}
+	Do follow the documentation I've linked above, but simply
+	\begin{enumerate}
+		\item \verb|Ctrl+Click| to place a \emph{control point}, this allows you to manipulate the spline.
+		\item Add as many points as you need, and manipulate the control points to get what you want.
+		\newpage
+		\item Find and press the \verb|Control Points| button (in the details panel, select all connected option)
+		\img{5}
+		\item Scroll down and find the \verb|Spline Meshes|, click the $\oplus$ button, expand the drop down you would see and slot in the static mesh we created earlier.
+		\item You'll see the road is oriented the wrong way, find and change the \verb|Forward Axis| to something that fixes it, $Y$ in my case. (And probably yours too.) \img{6}
+	\end{enumerate}
+
+	While we're here, let me bring your attention to these two options:
+	\img{7}
+	\begin{itemize}
+		\item The first one allows you to change your coordinate system from local (object) to world (global). You'll find it helpful when you've rotated an object and want to move it in the direction it's facing, rather than the global axes. Play around with it, you'll get the hang of it.
+		\item The second one is the snapping option. If you've got a rough/curved surface and want to place an object cleanly on it (respecting the average surface normal), you can use this. It will appropriately rotate the object to match the surface normal, so it looks like it's placed on it. I quickly demoed this in the class by placing a car on a slanted surface.
+	\end{itemize}
+
 	\section{Collision}
-	I'll talk a little about different collision meshes since I didn't cover them very well earlier. You should aim to keep as little faces you possible in a mesh that is to be considered for collision since it's algorithm has to loop through each face. The simplest collision meshes are often the most inaccurate, but inexpensive to work with. You can use your actual mesh as the collision mesh, which gives the most realistic result (we often don't need it to be so, it'll be difficult for us to properly utilize this fidelity! Remember that our default ThirdPerson character also has a simple cylindrical collision).
+	I'll talk a little about different collision meshes since I didn't cover them very well earlier. You should aim to keep as little faces you possible in a mesh that is to be considered for collision since its algorithm has to loop through each face. The simplest collision meshes are often the most inaccurate, but inexpensive to work with. You can use your actual mesh as the collision mesh, which gives the most realistic result (we often don't need it to be so, it'll be difficult for us to properly utilize this fidelity! Remember that our default ThirdPerson character also has a simple cylindrical collision).
 	
-	A usually good middle ground is a convex hull. I'll show them in Blender first (geometry nodes), and then show how to create it.
-	
-	Show the different collision meshes in the mesh editor. Talk about use complex collision as simple.
-	
-	Make trees collidable in foliage mode. Then talk about optimization.
+	A usually good middle ground is a convex hull. I'll show them in Blender first, and then show how to create it.
+
+	\img{8}
+	Take a look at this, the first one is a simple box, fewest of faces but least accurate. The second is a convex hull, it wraps our mesh fairly well and still uses relatively few faces. The third is our actual mesh, which is the most accurate but also the most expensive to work with.
+
+	\subsection{In Unreal}
+	\img{9}
+
+	Press the auto convex collision button to open up a new menu, where you can tweak a few settings which will get you a different convex mesh to be used for collisions. Note that the \emph{simple collision mesh} is the one used in games (real-time) and the \emph{complex collision mesh} is always the actual mesh. We can set to use the complex collision mesh and the simple one from the collision complexity setting. \\[10pt]
+	You could view these collision meshes by going to the \verb|Show| panel (right next to where it says Lit) and selecting what you wish to preview. You can also use the \verb|Collision| view mode to see the collision meshes in your scene. This is helpful to debug collision issues, but also to see how many faces your collision mesh has.
+
+	\subsection{Collision in foliage}
+	By default, when you put in trees in your scene using Foliage, they won't have collision and you can walk straight through them, this isn't what we usually want. To fix this, find this setting when you scroll down in the foliage panel (after selecting the foliage type you want to edit):
+	\newpage
+	\imgs{10}{0.7}
+	You've probably seen this menu before. I quickly wanted to differentiate between \verb|No Collision| and \verb|Overlap| since they seem to do the same thing. This is true, they both let our character pass through and don't stop it. But, in the blueprints editor, we can get an event that fires off when our character overlaps if we've set the preset to \verb|OverlapAll|, which we do not get if we've set it to \verb|No Collision|. This is useful if we want to trigger some event when our character walks through a tree, for example, we can play a sound or something.
 	
 	\section{Foliage optimization}
 	Foliage is quite difficult to run in real time, mainly for two reasons:
 	\begin{enumerate}
-		\item Number of instances. For good looking grass, you need a lot if it.
+		\item Number of instances. For good looking grass, you need a lot of it.
 		\item Wind animations. Calculating and applying these transformations isn't very quick!
 	\end{enumerate}
-	To combat the number of instances, we can use something referred to as \verb*|Culling|, this simply deletes our grass if it's some distance away from our character (we can also get a gradual fade, so it isn't a strict cutoff). Take a look at \href{https://dev.epicgames.com/documentation/en-us/unreal-engine/foliage-mode-in-unreal-engine#culling-settings}{Epic's documentation for PerInstanceFade} if you'd like to.\\[10pt]
+	To combat the number of instances, we can use something referred to as \verb*|Culling|, this simply deletes our grass if it's some distance away from our character (we also get a gradual fade, so it isn't a strict cutoff). Take a look at \href{https://dev.epicgames.com/documentation/en-us/unreal-engine/foliage-mode-in-unreal-engine#culling-settings}{Epic's documentation for PerInstanceFade} if you'd like to learn more, the PerInstanceFade node in the material editor gives us a simple gradient from 0 to 1 between the character the maximum set cull distance. 
+	\imgc{11}{Min and max cull distance in the foliage settings.}
+	Usually, setting the  max cull distance to about 4000 is good enough, and we keep the minimum to zero.
+	\subsection{Wind animations}
+	The world position offset is a parameter in the material editor of Unreal Engine that allows us to manipulate the position of the vertices of a mesh in the vertex shader. This is useful for creating effects like wind animations, where we want to move the vertices of a mesh in a way that simulates the effect of wind blowing through it.
+	\imgc{12}{WPO in the foliage setting, you'll have to expand the Advanced section to see it (of instance settings).}
+
+	Fairly self-explanatory, the wind animations will not be calculated after the distance specified in the \verb|World Position Offset Disable distance| (setting to 0 will take the maximum possible value, or disables the setting, whatever you prefer to call it). This is useful to save on performance, since we don't need the wind animations for grass that is far away from the player. The wind animations are calculated in the vertex shader, so they can be quite expensive to run in real time, especially if we have a lot of grass in our scene.\\
+	The enable switch right on top of this setting is used to enable or disable the wind animations for the foliage. If we disable it, the grass will not move at all, similar to disabling real-time mode in our viewport.
+
+	\section*{Conclusion}
+	I believe this does it, I covered everything I talked about in the class. If you've got any questions (or suggestions!), let me know.
 	
-	We also get a simple \verb|World Position Offset Disable Distance| parameter that does exactly what it says; stops calculating this offset (here, wind) after the specified distance.
+	% \section{View modes}
+	% Once again, \href{https://dev.epicgames.com/documentation/en-us/unreal-engine/viewport-modes-in-unreal-engine}{Epic's documentation on viewport modes}.
+	% These are helpful to get a more detailed look at your scene, with hopes to optimize it and find bottlenecks or resolve artifacts.
+	% The important ones are 
+	% \begin{enumerate}
+	% 	\item Light complexity
+	% 	\item Shader complexity
+	% 	\item Collision
+	% 	\item Nanite
+	% 	\item Scene depth
+	% \end{enumerate}
 	
-	\section{Materials}
-	I covered materials in my week 1 recap, I'll just construct a basic material and talk about instances and parameters.
-	
-	\subsection{Foliage Materials}
-	Last thing we'll talk about is giving it the wind animation, get the simplewindanimation node, multiply it by a bounding box node, maybe show a lil gradient in blender? 0 at bottom, multiplying by zero nullifies our wind, keeps the bottom stationary, what we needed.
-	
-	\section{View modes}
-	Once again, \href{https://dev.epicgames.com/documentation/en-us/unreal-engine/viewport-modes-in-unreal-engine}{Epic's documentation on viewport modes}.
-	These are helpful to get a more detailed look at your scene, with hopes to optimize it and find bottlenecks or resolve artifacts.
-	The important ones are 
-	\begin{enumerate}
-		\item Light complexity
-		\item Shader complexity
-		\item Collision
-		\item Nanite
-		\item Scene depth
-	\end{enumerate}
-	
-	\section{End}
-	End?
+	% \section{End}
+	% End?
 	
 \end{document}
