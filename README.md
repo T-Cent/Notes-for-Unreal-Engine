@@ -33,3 +33,23 @@ This repository contains a version of the notes for a class I'm co-teaching. The
     - Landscape splines
     - Collision meshes
     - Foliage optimizations (culling and WPO)
+
+1. [Day 6](./Day%206%20Notes.pdf) *(made by Utkarsh, the person I'm co-teaching this class with, find the source files for this on [this Google Doc](https://docs.google.com/document/d/1h2dPA4gUPB9nokVJ74qZnCLCCgWOtva5tqADJp2v1Gs/edit?usp=sharing))*
+    - Widget
+    - Widget Blueprints
+    - Level Blueprints
+
+1. [Day 7](./Day%207.pdf)
+    - Materials
+    - The material editor
+    - Material Instances
+    - Wind animation
+    - Level of detail
+
+1. [Day 7.5](./day7.5.md) *(this was not an actual class, but pertained to help with an assignment we gave out, for which I ended up writing about Interfaces)*
+    - Dynamic Material
+    - Widgets
+    - Blueprint communication
+        - Tags
+        - Casting
+        - Interfaces
